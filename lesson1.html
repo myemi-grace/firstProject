@@ -1,0 +1,2177 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Music Composer Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+        body {
+            box-sizing: border-box;
+        }
+
+        * {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #0a0a1f 0%, #1a0a2e 25%, #16213e 50%, #0f3460 75%, #0a0a1f 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 20s ease infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .gradient-bg::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 70%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+            animation: floatingOrbs 15s ease infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes floatingOrbs {
+            0%, 100% { opacity: 0.3; transform: scale(1) translate(0, 0); }
+            33% { opacity: 0.5; transform: scale(1.1) translate(10px, -10px); }
+            66% { opacity: 0.4; transform: scale(0.9) translate(-10px, 10px); }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            position: relative;
+            z-index: 1;
+        }
+
+        .note-input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(139, 92, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .note-input:focus {
+            border-color: rgba(139, 92, 246, 0.8);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+            outline: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 40px rgba(139, 92, 246, 0.5), 0 0 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .instrument-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .instrument-card:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .instrument-card.selected {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.6);
+        }
+
+        .category-tab {
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .category-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .category-tab.active {
+            background: rgba(139, 92, 246, 0.3);
+            color: #c4b5fd;
+        }
+
+        .composition-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .composition-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .visualizer-bar {
+            background: linear-gradient(180deg, #8b5cf6 0%, #6366f1 50%, #4f46e5 100%);
+            transition: height 0.1s ease, background 0.3s ease;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+        }
+
+        .visualizer-bar.active {
+            background: linear-gradient(180deg, #a78bfa 0%, #8b5cf6 50%, #6366f1 100%);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.8), 0 0 40px rgba(139, 92, 246, 0.4);
+        }
+
+        .piano-key-white {
+            background: linear-gradient(180deg, #ffffff 0%, #e5e5e5 100%);
+            border: 1px solid #ccc;
+            transition: all 0.1s ease;
+        }
+
+        .piano-key-white:hover {
+            background: linear-gradient(180deg, #f0f0f0 0%, #d5d5d5 100%);
+        }
+
+        .piano-key-white.active {
+            background: linear-gradient(180deg, #c4b5fd 0%, #a78bfa 100%);
+        }
+
+        .piano-key-black {
+            background: linear-gradient(180deg, #333 0%, #1a1a1a 100%);
+            border: 1px solid #000;
+            transition: all 0.1s ease;
+        }
+
+        .piano-key-black:hover {
+            background: linear-gradient(180deg, #444 0%, #2a2a2a 100%);
+        }
+
+        .piano-key-black.active {
+            background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
+        }
+
+        .scrollbar-custom::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.4);
+            border-radius: 4px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+            background: rgba(139, 92, 246, 0.6);
+        }
+
+        .note-highlight {
+            animation: noteGlow 0.5s ease;
+        }
+
+        @keyframes noteGlow {
+            0% { background: rgba(139, 92, 246, 0.4); }
+            100% { background: transparent; }
+        }
+
+        .playing-indicator {
+            animation: pulse 1s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .music-particle {
+            position: fixed;
+            pointer-events: none;
+            font-size: 20px;
+            animation: floatUp 4s ease-out forwards;
+            z-index: 9999;
+            opacity: 0.8;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-300px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .rainbow-glow {
+            animation: rainbowGlow 3s ease infinite;
+        }
+
+        @keyframes rainbowGlow {
+            0% { filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.8)); }
+            25% { filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.8)); }
+            50% { filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.8)); }
+            75% { filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.8)); }
+            100% { filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.8)); }
+        }
+
+        .toast {
+            animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .tempo-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            height: 8px;
+        }
+
+        .tempo-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .duration-btn.selected {
+            background: rgba(139, 92, 246, 0.3);
+            border-color: rgba(139, 92, 246, 0.8);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+        }
+
+        .duration-btn.selected .font-bold {
+            color: #c4b5fd;
+        }
+
+        .clef-btn.selected {
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+        }
+
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        .delete-confirm-btn {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+            transition: all 0.2s ease;
+        }
+
+        .delete-confirm-btn:hover {
+            background: rgba(239, 68, 68, 0.4);
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body class="h-full gradient-bg text-white overflow-auto">
+  <div id="app" class="h-full w-full flex flex-col"><!-- Header -->
+   <header class="glass-panel border-b border-white/10 p-4 flex-shrink-0">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+     <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center rainbow-glow">
+       <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+       </svg>
+      </div>
+      <h1 id="app-title" class="text-xl font-bold bg-gradient-to-r from-violet-300 via-purple-300 to-indigo-300 bg-clip-text text-transparent">Music Composer Studio</h1>
+     </div>
+     <div class="flex items-center gap-4">
+      <div id="playing-status" class="hidden items-center gap-2 text-violet-300"><span class="playing-indicator w-2 h-2 rounded-full bg-violet-400"></span> <span class="text-sm">Playing...</span>
+      </div>
+      <div class="text-sm text-gray-400"><span id="composition-count">0</span> compositions saved
+      </div>
+     </div>
+    </div>
+   </header><!-- Main Content -->
+   <main class="flex-1 overflow-auto p-4 scrollbar-custom">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6"><!-- Left Panel - Composer -->
+     <div class="lg:col-span-2 space-y-6"><!-- Notation Guide -->
+      <div class="glass-panel rounded-2xl p-5">
+       <h2 class="text-lg font-semibold text-violet-300 mb-3 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg> Notation Guide</h2>
+       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+        <div class="bg-black/20 rounded-xl p-3 hover:bg-black/30 transition-all">
+         <div class="text-violet-400 font-medium mb-1">
+          🎵 Notes
+         </div>
+         <div class="text-gray-300 mono-font">
+          a b c d e f g
+         </div>
+         <div class="text-gray-500 text-xs mt-1">
+          Natural notes
+         </div>
+        </div>
+        <div class="bg-black/20 rounded-xl p-3 hover:bg-black/30 transition-all">
+         <div class="text-violet-400 font-medium mb-1">
+          ♯♭ Accidentals
+         </div>
+         <div class="text-gray-300 mono-font">
+          c# db f# gb
+         </div>
+         <div class="text-gray-500 text-xs mt-1">
+          # for sharp, b for flat
+         </div>
+        </div>
+        <div class="bg-black/20 rounded-xl p-3 hover:bg-black/30 transition-all">
+         <div class="text-violet-400 font-medium mb-1">
+          🎹 Octave
+         </div>
+         <div class="text-gray-300 mono-font">
+          c4 a5 g3
+         </div>
+         <div class="text-gray-500 text-xs mt-1">
+          Number after note (1-8)
+         </div>
+        </div>
+        <div class="bg-black/20 rounded-xl p-3 hover:bg-black/30 transition-all">
+         <div class="text-violet-400 font-medium mb-1">
+          🎼 Chords
+         </div>
+         <div class="text-gray-300 mono-font">
+          [c4 e4 g4]q
+         </div>
+         <div class="text-gray-500 text-xs mt-1">
+          Brackets for chords
+         </div>
+        </div>
+       </div>
+       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mt-4">
+        <div class="bg-black/20 rounded-xl p-3 hover:bg-black/30 transition-all">
+         <div class="text-violet-400 font-medium mb-1">
+          𝅝 Whole
+         </div>
+         <div class="text-gray-300 mono-font text-xs">
+          c4w
+         </div>
+         <div class="text-gray-500 text-xs mt-1">
+          4 beats
+         </div>
+        </div>
+        <div class="bg-black/20 rounded-xl p-3 hover:bg-black/30 transition-all">
+         <div class="text-violet-400 font-medium mb-1">
+          𝅗𝅥 Half
+         </div>
+         <div class="text-gray-300 mono-font text-xs">
+          c4h
+         </div>
+         <div class="text-gray-500 text-xs mt-1">
+          2 beats
+         </div>
+        </div>
+        <div class="bg-black/20 rounded-xl p-3 hover:bg-black/30 transition-all">
+         <div class="text-violet-400 font-medium mb-1">
+          ♩ Quarter
+         </div>
+         <div class="text-gray-300 mono-font text-xs">
+          c4q or c4
+         </div>
+         <div class="text-gray-500 text-xs mt-1">
+          1 beat
+         </div>
+        </div>
+        <div class="bg-black/20 rounded-xl p-3 hover:bg-black/30 transition-all">
+         <div class="text-violet-400 font-medium mb-1">
+          ♪ Eighth
+         </div>
+         <div class="text-gray-300 mono-font text-xs">
+          c4e
+         </div>
+         <div class="text-gray-500 text-xs mt-1">
+          0.5 beats
+         </div>
+        </div>
+        <div class="bg-black/20 rounded-xl p-3 hover:bg-black/30 transition-all">
+         <div class="text-violet-400 font-medium mb-1">
+          ♬ 16th
+         </div>
+         <div class="text-gray-300 mono-font text-xs">
+          c4s
+         </div>
+         <div class="text-gray-500 text-xs mt-1">
+          0.25 beats
+         </div>
+        </div>
+        <div class="bg-black/20 rounded-xl p-3 hover:bg-black/30 transition-all">
+         <div class="text-violet-400 font-medium mb-1">
+          ♬♬ 32nd
+         </div>
+         <div class="text-gray-300 mono-font text-xs">
+          c4t
+         </div>
+         <div class="text-gray-500 text-xs mt-1">
+          0.125 beats
+         </div>
+        </div>
+        <div class="bg-black/20 rounded-xl p-3 hover:bg-black/30 transition-all">
+         <div class="text-violet-400 font-medium mb-1">
+          ♩. Dotted
+         </div>
+         <div class="text-gray-300 mono-font text-xs">
+          c4q.
+         </div>
+         <div class="text-gray-500 text-xs mt-1">
+          1.5x duration
+         </div>
+        </div>
+        <div class="bg-black/20 rounded-xl p-3 hover:bg-black/30 transition-all">
+         <div class="text-violet-400 font-medium mb-1">
+          🎵 Rest
+         </div>
+         <div class="text-gray-300 mono-font text-xs">
+          rq rh
+         </div>
+         <div class="text-gray-500 text-xs mt-1">
+          Silent pause
+         </div>
+        </div>
+       </div>
+      </div><!-- Composer Input -->
+      <div class="glass-panel rounded-2xl p-5">
+       <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-violet-300 flex items-center gap-2">
+         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+         </svg> Compose</h2><button id="clear-btn" class="btn-secondary px-3 py-1 rounded-lg text-sm text-gray-300 hover:text-white"> Clear </button>
+       </div>
+       <div class="space-y-4">
+        <div><label for="composition-title" class="block text-sm text-gray-400 mb-2">Title</label> <input type="text" id="composition-title" class="w-full note-input rounded-xl px-4 py-3 text-white placeholder-gray-500" placeholder="My Composition">
+        </div>
+        <div><label for="note-input" class="block text-sm text-gray-400 mb-2">Notes</label> <textarea id="note-input" class="w-full note-input rounded-xl px-4 py-3 text-white placeholder-gray-500 mono-font min-h-32 resize-y" placeholder="Enter notes here... e.g., c4q d4q e4h g4w"></textarea>
+        </div><!-- Duration Quick Select -->
+        <div><label class="block text-sm text-gray-400 mb-2">Quick Duration Insert</label>
+         <div class="grid grid-cols-4 gap-2"><button class="duration-btn bg-black/30 hover:bg-violet-500/20 border border-gray-600/30 hover:border-violet-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-duration="w">
+           <div class="font-bold text-violet-300">
+            𝅝
+           </div>
+           <div class="text-gray-400">
+            Whole
+           </div></button> <button class="duration-btn bg-black/30 hover:bg-violet-500/20 border border-gray-600/30 hover:border-violet-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-duration="h">
+           <div class="font-bold text-violet-300">
+            𝅗𝅥
+           </div>
+           <div class="text-gray-400">
+            Half
+           </div></button> <button class="duration-btn bg-black/30 hover:bg-violet-500/20 border border-gray-600/30 hover:border-violet-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-duration="q">
+           <div class="font-bold text-violet-300">
+            ♩
+           </div>
+           <div class="text-gray-400">
+            Quarter
+           </div></button> <button class="duration-btn bg-black/30 hover:bg-violet-500/20 border border-gray-600/30 hover:border-violet-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-duration="e">
+           <div class="font-bold text-violet-300">
+            ♪
+           </div>
+           <div class="text-gray-400">
+            Eighth
+           </div></button> <button class="duration-btn bg-black/30 hover:bg-violet-500/20 border border-gray-600/30 hover:border-violet-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-duration="s">
+           <div class="font-bold text-violet-300">
+            ♬
+           </div>
+           <div class="text-gray-400">
+            16th
+           </div></button> <button class="duration-btn bg-black/30 hover:bg-violet-500/20 border border-gray-600/30 hover:border-violet-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-duration="t">
+           <div class="font-bold text-violet-300">
+            ♬♬
+           </div>
+           <div class="text-gray-400">
+            32nd
+           </div></button> <button class="duration-btn bg-black/30 hover:bg-violet-500/20 border border-gray-600/30 hover:border-violet-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-duration="q.">
+           <div class="font-bold text-violet-300">
+            ♩.
+           </div>
+           <div class="text-gray-400">
+            Dotted
+           </div></button> <button class="duration-btn bg-black/30 hover:bg-violet-500/20 border border-gray-600/30 hover:border-violet-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-duration="r">
+           <div class="font-bold text-gray-400">
+            🎵
+           </div>
+           <div class="text-gray-400">
+            Rest
+           </div></button>
+         </div>
+         <p class="text-xs text-gray-500 mt-2">Click a duration, then click piano keys to insert notes with that duration</p>
+        </div><!-- Chord Quick Insert -->
+        <div><label class="block text-sm text-gray-400 mb-2">Quick Chord Insert</label>
+         <div class="grid grid-cols-3 gap-2"><button class="chord-btn bg-black/30 hover:bg-emerald-500/20 border border-gray-600/30 hover:border-emerald-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-chord="major">
+           <div class="font-bold text-emerald-300">
+            Major
+           </div>
+           <div class="text-gray-400 text-xs">
+            C E G
+           </div></button> <button class="chord-btn bg-black/30 hover:bg-blue-500/20 border border-gray-600/30 hover:border-blue-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-chord="minor">
+           <div class="font-bold text-blue-300">
+            Minor
+           </div>
+           <div class="text-gray-400 text-xs">
+            C Eb G
+           </div></button> <button class="chord-btn bg-black/30 hover:bg-amber-500/20 border border-gray-600/30 hover:border-amber-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-chord="dim">
+           <div class="font-bold text-amber-300">
+            Dim
+           </div>
+           <div class="text-gray-400 text-xs">
+            C Eb Gb
+           </div></button> <button class="chord-btn bg-black/30 hover:bg-purple-500/20 border border-gray-600/30 hover:border-purple-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-chord="aug">
+           <div class="font-bold text-purple-300">
+            Aug
+           </div>
+           <div class="text-gray-400 text-xs">
+            C E G#
+           </div></button> <button class="chord-btn bg-black/30 hover:bg-pink-500/20 border border-gray-600/30 hover:border-pink-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-chord="7th">
+           <div class="font-bold text-pink-300">
+            7th
+           </div>
+           <div class="text-gray-400 text-xs">
+            C E G Bb
+           </div></button> <button class="chord-btn bg-black/30 hover:bg-cyan-500/20 border border-gray-600/30 hover:border-cyan-500/50 px-3 py-2 rounded-lg text-xs transition-all" data-chord="sus4">
+           <div class="font-bold text-cyan-300">
+            Sus4
+           </div>
+           <div class="text-gray-400 text-xs">
+            C F G
+           </div></button>
+         </div>
+         <p class="text-xs text-gray-500 mt-2">Click a chord type to insert at current octave</p>
+        </div><!-- Clef Selector -->
+        <div><label class="block text-sm text-gray-400 mb-2">Clef (Hand Position)</label>
+         <div class="grid grid-cols-2 gap-2"><button id="treble-clef-btn" class="clef-btn selected bg-violet-500/20 border border-violet-500/50 px-4 py-2 rounded-lg text-sm transition-all" data-clef="treble">
+           <div class="font-bold text-violet-300">
+            𝄞 Treble
+           </div>
+           <div class="text-gray-400 text-xs">
+            Right Hand (Octave 4-5)
+           </div></button> <button id="bass-clef-btn" class="clef-btn bg-black/30 hover:bg-orange-500/20 border border-gray-600/30 hover:border-orange-500/50 px-4 py-2 rounded-lg text-sm transition-all" data-clef="bass">
+           <div class="font-bold text-orange-300">
+            𝄢 Bass
+           </div>
+           <div class="text-gray-400 text-xs">
+            Left Hand (Octave 2-3)
+           </div></button>
+         </div>
+         <p class="text-xs text-gray-500 mt-2">Switch between treble clef (right hand) and bass clef (left hand)</p>
+        </div><!-- Tempo Control -->
+        <div><label class="block text-sm text-gray-400 mb-2">Tempo: <span id="tempo-value" class="text-violet-300">120</span> BPM</label> <input type="range" id="tempo-slider" min="40" max="240" value="120" class="w-full tempo-slider">
+        </div><!-- Action Buttons -->
+        <div class="flex flex-wrap gap-3"><button id="play-btn" class="btn-primary px-6 py-3 rounded-xl font-semibold flex items-center gap-2">
+          <svg class="w-5 h-5" fill="currentColor" viewbox="0 0 24 24"><path d="M8 5v14l11-7z" />
+          </svg> Play </button> <button id="stop-btn" class="btn-secondary px-6 py-3 rounded-xl font-semibold flex items-center gap-2 hidden">
+          <svg class="w-5 h-5" fill="currentColor" viewbox="0 0 24 24"><rect x="6" y="6" width="12" height="12" />
+          </svg> Stop </button> <button id="save-btn" class="btn-secondary px-6 py-3 rounded-xl font-semibold flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+          </svg> Save </button>
+        </div>
+       </div>
+      </div><!-- Visualizer -->
+      <div class="glass-panel rounded-2xl p-5">
+       <h2 class="text-lg font-semibold text-violet-300 mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg> Visualizer</h2>
+       <div id="visualizer" class="h-24 bg-black/30 rounded-xl flex items-end justify-center gap-1 p-3 overflow-hidden"><!-- Visualizer bars will be generated here -->
+       </div>
+      </div><!-- Virtual Piano -->
+      <div class="glass-panel rounded-2xl p-5">
+       <h2 class="text-lg font-semibold text-violet-300 mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" />
+        </svg> Virtual Keyboard</h2>
+       <div id="piano" class="flex justify-center overflow-x-auto pb-2 scrollbar-custom">
+        <div class="relative flex"><!-- Piano keys will be generated here -->
+        </div>
+       </div>
+       <p class="text-xs text-gray-500 text-center mt-3">Click keys to add notes to your composition</p>
+      </div><!-- Parsed Notes Display -->
+      <div class="glass-panel rounded-2xl p-5">
+       <h2 class="text-lg font-semibold text-violet-300 mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg> Parsed Notes</h2>
+       <div id="parsed-notes" class="flex flex-wrap gap-2 min-h-12 bg-black/20 rounded-xl p-3"><span class="text-gray-500 text-sm">Notes will appear here as you type...</span>
+       </div>
+      </div>
+     </div><!-- Right Panel - Instruments & Saved -->
+     <div class="space-y-6"><!-- Instrument Selector -->
+      <div class="glass-panel rounded-2xl p-5">
+       <h2 class="text-lg font-semibold text-violet-300 mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+        </svg> Instruments (<span id="instrument-count">0</span>)</h2><!-- Category Tabs -->
+       <div id="category-tabs" class="flex flex-wrap gap-2 mb-4"><!-- Category tabs will be generated here -->
+       </div><!-- Search -->
+       <div class="mb-4"><input type="text" id="instrument-search" class="w-full note-input rounded-lg px-3 py-2 text-sm" placeholder="Search instruments...">
+       </div><!-- Instrument List -->
+       <div id="instrument-list" class="max-h-64 overflow-y-auto scrollbar-custom space-y-2"><!-- Instruments will be generated here -->
+       </div>
+       <div class="mt-4 p-3 bg-black/20 rounded-xl">
+        <div class="text-sm text-gray-400">
+         Selected:
+        </div>
+        <div id="selected-instrument" class="text-violet-300 font-medium">
+         Piano
+        </div>
+       </div>
+      </div><!-- Saved Compositions -->
+      <div class="glass-panel rounded-2xl p-5">
+       <h2 class="text-lg font-semibold text-violet-300 mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg> Saved Compositions</h2>
+       <div id="saved-compositions" class="max-h-96 overflow-y-auto scrollbar-custom space-y-3">
+        <p class="text-gray-500 text-sm text-center py-4">No saved compositions yet</p>
+       </div>
+       <div id="limit-warning" class="hidden mt-3 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-xl text-yellow-300 text-sm">
+        ⚠️ Maximum limit of 999 compositions reached. Please delete some to save new ones.
+       </div>
+      </div><!-- Quick Reference -->
+      <div class="glass-panel rounded-2xl p-5">
+       <h2 class="text-lg font-semibold text-violet-300 mb-3 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg> Quick Reference</h2>
+       <div class="space-y-2 text-sm">
+        <div class="flex justify-between text-gray-400 hover:text-violet-300 transition-colors"><span>Whole note 𝅝</span> <span class="mono-font text-gray-300">c4w</span>
+        </div>
+        <div class="flex justify-between text-gray-400 hover:text-violet-300 transition-colors"><span>Half note 𝅗𝅥</span> <span class="mono-font text-gray-300">c4h</span>
+        </div>
+        <div class="flex justify-between text-gray-400 hover:text-violet-300 transition-colors"><span>Quarter note ♩</span> <span class="mono-font text-gray-300">c4q or c4</span>
+        </div>
+        <div class="flex justify-between text-gray-400 hover:text-violet-300 transition-colors"><span>Eighth note ♪</span> <span class="mono-font text-gray-300">c4e</span>
+        </div>
+        <div class="flex justify-between text-gray-400 hover:text-violet-300 transition-colors"><span>Sixteenth note ♬</span> <span class="mono-font text-gray-300">c4s</span>
+        </div>
+        <div class="flex justify-between text-gray-400 hover:text-violet-300 transition-colors"><span>32nd note ♬♬</span> <span class="mono-font text-gray-300">c4t</span>
+        </div>
+        <div class="flex justify-between text-gray-400 hover:text-pink-300 transition-colors"><span>Sharp ♯</span> <span class="mono-font text-pink-300">c#4q</span>
+        </div>
+        <div class="flex justify-between text-gray-400 hover:text-cyan-300 transition-colors"><span>Flat ♭</span> <span class="mono-font text-cyan-300">db4q</span>
+        </div>
+        <div class="flex justify-between text-gray-400 hover:text-violet-300 transition-colors"><span>Dotted note ♩.</span> <span class="mono-font text-gray-300">c4q.</span>
+        </div>
+        <div class="flex justify-between text-gray-400 hover:text-violet-300 transition-colors"><span>Rest 🎵</span> <span class="mono-font text-gray-300">rq rh</span>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div>
+   </main><!-- Toast Container -->
+   <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"><!-- Toasts will be added here -->
+   </div><!-- Loading Overlay -->
+   <div id="loading-overlay" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center">
+    <div class="glass-panel rounded-2xl p-8 flex flex-col items-center gap-4">
+     <div class="loading-spinner w-8 h-8 border-3 border-violet-500 border-t-transparent rounded-full"></div><span class="text-gray-300">Loading...</span>
+    </div>
+   </div>
+  </div>
+  <script>
+        // ============================================
+        // CONFIGURATION AND STATE
+        // ============================================
+
+        const defaultConfig = {
+            app_title: 'Music Composer Studio',
+            placeholder_text: 'Enter notes here... e.g., c4* d4* e4** g4****',
+            background_color: '#0f0f23',
+            surface_color: '#1a1a3e',
+            text_color: '#e5e5e5',
+            primary_action_color: '#8b5cf6',
+            secondary_action_color: '#6366f1'
+        };
+
+        let compositions = [];
+        let currentRecordCount = 0;
+        let selectedInstrument = 'Piano';
+        let audioContext = null;
+        let isPlaying = false;
+        let currentPlayback = null;
+        let currentOctave = 4;
+        let selectedDuration = 'q'; // Default to quarter note
+        let currentClef = 'treble'; // 'treble' or 'bass'
+
+        // ============================================
+        // INSTRUMENT DATABASE (150+ instruments)
+        // ============================================
+
+        const instrumentCategories = {
+            'Piano & Keys': [
+                'Piano', 'Grand Piano', 'Upright Piano', 'Electric Piano', 'Rhodes Piano',
+                'Wurlitzer', 'Clavinet', 'Harpsichord', 'Celesta', 'Music Box',
+                'Toy Piano', 'Prepared Piano', 'Honky-tonk Piano', 'Digital Piano', 'Stage Piano',
+                'Fortepiano', 'Square Piano', 'Spinet', 'Virginal', 'Clavichord'
+            ],
+            'Organ': [
+                'Church Organ', 'Pipe Organ', 'Hammond Organ', 'Electric Organ', 'Reed Organ',
+                'Harmonium', 'Accordion', 'Melodica', 'Pump Organ', 'Theatre Organ',
+                'Portative Organ', 'Positive Organ', 'Calliope', 'Steam Organ', 'Glass Armonica',
+                'Regal', 'Barrel Organ', 'Fairground Organ', 'Concertina', 'Bandoneon'
+            ],
+            'Guitar & Bass': [
+                'Acoustic Guitar', 'Classical Guitar', 'Electric Guitar', 'Bass Guitar', '12-String Guitar',
+                'Steel Guitar', 'Resonator Guitar', 'Flamenco Guitar', 'Jazz Guitar', 'Archtop Guitar',
+                'Semi-hollow Guitar', 'Baritone Guitar', 'Tenor Guitar', 'Parlor Guitar', 'Dreadnought Guitar',
+                'Electric Bass', 'Fretless Bass', 'Upright Bass', '5-String Bass', '6-String Bass',
+                'Acoustic Bass', 'Slap Bass', 'Synth Bass', 'Sub Bass', 'Chapman Stick'
+            ],
+            'Bowed Strings': [
+                'Violin', 'Viola', 'Cello', 'Double Bass', 'Fiddle',
+                'Electric Violin', 'Baroque Violin', 'Hardanger Fiddle', 'Viola d\'amore', 'Violone',
+                'Erhu', 'Gaohu', 'Zhonghu', 'Banhu', 'Jinghu',
+                'Goje', 'Kamancheh', 'Morin Khuur', 'Nyckelharpa', 'Stroh Violin',
+                'Octobass', 'Pochette', 'Rebec', 'Sarangi', 'Vielle'
+            ],
+            'Plucked Strings': [
+                'Harp', 'Celtic Harp', 'Pedal Harp', 'Kora', 'Lyre',
+                'Guzheng', 'Koto', 'Sitar', 'Sarod', 'Santoor',
+                'Dulcimer', 'Zither', 'Banjo', 'Mandolin', 'Ukulele',
+                'Bouzouki', 'Lute', 'Oud', 'Balalaika', 'Pipa',
+                'Shamisen', 'Biwa', 'Domra', 'Kobza', 'Tamburitza',
+                'Charango', 'Cuatro', 'Vihuela', 'Theorbo', 'Cittern'
+            ],
+            'Brass': [
+                'Trumpet', 'Trombone', 'French Horn', 'Tuba', 'Cornet',
+                'Flugelhorn', 'Euphonium', 'Baritone Horn', 'Piccolo Trumpet', 'Bass Trumpet',
+                'Alto Horn', 'Sousaphone', 'Mellophone', 'Wagner Tuba', 'Cimbasso',
+                'Natural Horn', 'Bugle', 'Post Horn', 'Serpent', 'Ophicleide',
+                'Helicon', 'Saxhorn', 'Tenor Horn', 'Pocket Trumpet', 'Shofar'
+            ],
+            'Woodwinds': [
+                'Flute', 'Clarinet', 'Oboe', 'Bassoon', 'Saxophone',
+                'Alto Saxophone', 'Tenor Saxophone', 'Soprano Saxophone', 'Baritone Saxophone', 'Piccolo',
+                'Alto Flute', 'Bass Flute', 'Contrabass Flute', 'Recorder', 'Pan Flute',
+                'Ocarina', 'English Horn', 'Bass Clarinet', 'Contrabassoon', 'Cor Anglais',
+                'Heckelphone', 'Bagpipes', 'Duduk', 'Shakuhachi', 'Bansuri',
+                'Tin Whistle', 'Low Whistle', 'Pennywhistle', 'Fife', 'Flageolet',
+                'Chalumeau', 'Tarogato', 'Sopranino Sax', 'Sopranissimo Sax', 'Subcontrabass Sax'
+            ],
+            'Mallet Percussion': [
+                'Xylophone', 'Marimba', 'Vibraphone', 'Glockenspiel', 'Tubular Bells',
+                'Steel Drums', 'Hang Drum', 'Kalimba', 'Mbira', 'Balafon',
+                'Gamelan', 'Angklung', 'Gender', 'Saron', 'Slenthem',
+                'Metallophone', 'Celesta', 'Crotales', 'Lithophone', 'Glass Marimba'
+            ],
+            'Drums & Percussion': [
+                'Drums', 'Snare Drum', 'Bass Drum', 'Tom-tom', 'Hi-hat',
+                'Cymbals', 'Crash Cymbal', 'Ride Cymbal', 'Timpani', 'Triangle',
+                'Tambourine', 'Castanets', 'Bongos', 'Congas', 'Djembe',
+                'Tabla', 'Cajon', 'Shaker', 'Claves', 'Woodblock',
+                'Cowbell', 'Agogo', 'Cabasa', 'Guiro', 'Vibraslap',
+                'Taiko', 'Darbuka', 'Frame Drum', 'Bodhran', 'Talking Drum',
+                'Ashiko', 'Udu', 'Pandeiro', 'Repinique', 'Surdo',
+                'Cuica', 'Rototom', 'Timbales', 'Gong', 'Wind Chimes'
+            ],
+            'Synth & Electronic': [
+                'Synthesizer', 'Analog Synth', 'Digital Synth', 'Modular Synth', 'FM Synth',
+                'Wavetable Synth', 'Granular Synth', 'Additive Synth', 'Subtractive Synth', 'Sample-based Synth',
+                'Theremin', 'Ondes Martenot', 'Vocoder', 'Talk Box', 'Drum Machine',
+                'Sampler', 'Groovebox', 'Sequencer', 'Arpeggiator', 'Pad Synth',
+                'Lead Synth', 'Bass Synth', 'Pluck Synth', 'String Synth', 'Brass Synth',
+                'Moog Synth', 'Prophet Synth', 'DX7', 'Juno', 'Jupiter',
+                'Minimoog', 'ARP 2600', 'Korg MS-20', 'Roland TB-303', 'TR-808'
+            ],
+            'Voice & Choir': [
+                'Soprano', 'Alto', 'Tenor', 'Bass', 'Choir',
+                'Boys Choir', 'Gospel Choir', 'Chamber Choir', 'Barbershop', 'A Cappella',
+                'Opera Singer', 'Jazz Vocalist', 'Beatboxer', 'Throat Singer', 'Yodeler',
+                'Countertenor', 'Mezzo-soprano', 'Baritone', 'Contralto', 'Castrato',
+                'Falsetto', 'Coloratura', 'Spinto', 'Dramatic Voice', 'Lyric Voice'
+            ],
+            'World Instruments': [
+                'Didgeridoo', 'Udu', 'Berimbau', 'Kalimba', 'Steel Pan',
+                'Maracas', 'Claves', 'Guiro', 'Cabasa', 'Shekere',
+                'Vuvuzela', 'Alphorn', 'Conch Shell', 'Jaw Harp', 'Musical Saw',
+                'Theremin', 'Glass Harmonica', 'Waterphone', 'Cristal Baschet', 'Singing Bowl',
+                'Veena', 'Tanpura', 'Rabab', 'Ney', 'Zurna',
+                'Bagpipes (Scottish)', 'Uilleann Pipes', 'Gaita', 'Zampogna', 'Launeddas'
+            ],
+            'Traditional Asian': [
+                'Guzheng', 'Erhu', 'Pipa', 'Yangqin', 'Dizi',
+                'Sheng', 'Suona', 'Hulusi', 'Xun', 'Guqin',
+                'Koto', 'Shamisen', 'Shakuhachi', 'Taiko', 'Biwa',
+                'Sitar', 'Tabla', 'Sarangi', 'Bansuri', 'Shehnai',
+                'Gamelan', 'Angklung', 'Sasando', 'Kulintang', 'Sapeh'
+            ],
+            'Traditional Middle Eastern': [
+                'Oud', 'Qanun', 'Ney', 'Duduk', 'Zurna',
+                'Tar', 'Setar', 'Kamancheh', 'Santur', 'Tonbak',
+                'Daf', 'Riq', 'Bendir', 'Mizmar', 'Arghul',
+                'Bouzouki', 'Baglama', 'Saz', 'Cumbus', 'Tzouras'
+            ],
+            'Traditional African': [
+                'Djembe', 'Kora', 'Balafon', 'Mbira', 'Kalimba',
+                'Talking Drum', 'Shekere', 'Udu', 'Ngoni', 'Kora',
+                'Marimba', 'Mbira Dzavadzimu', 'Hosho', 'Kudu Horn', 'Vuvuzela',
+                'Agogo Bells', 'Axatse', 'Dundun', 'Kpanlogo', 'Fontomfrom'
+            ],
+            'Traditional Latin': [
+                'Charango', 'Cuatro', 'Tres', 'Vihuela', 'Jarana',
+                'Guiro', 'Claves', 'Maracas', 'Bongos', 'Congas',
+                'Timbales', 'Cajon', 'Quena', 'Zampoña', 'Bandola',
+                'Cajón', 'Güiro', 'Marímbula', 'Shekere', 'Pandeiro'
+            ]
+        };
+
+        // Get total instrument count
+        const getTotalInstrumentCount = () => {
+            return Object.values(instrumentCategories).reduce((sum, arr) => sum + arr.length, 0);
+        };
+
+        // ============================================
+        // AUDIO ENGINE
+        // ============================================
+
+        const initAudioContext = () => {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioContext;
+        };
+
+        const noteToFrequency = (note, octave) => {
+            const notes = {
+                'c': 0, 'c#': 1, 'db': 1, 'd': 2, 'd#': 3, 'eb': 3,
+                'e': 4, 'f': 5, 'f#': 6, 'gb': 6, 'g': 7, 'g#': 8,
+                'ab': 8, 'a': 9, 'a#': 10, 'bb': 10, 'b': 11
+            };
+            const semitone = notes[note.toLowerCase()];
+            if (semitone === undefined) return null;
+            return 440 * Math.pow(2, (semitone - 9 + (octave - 4) * 12) / 12);
+        };
+
+        const getInstrumentWaveform = (instrument) => {
+            const waveforms = {
+                'Piano': 'triangle',
+                'Grand Piano': 'triangle',
+                'Upright Piano': 'triangle',
+                'Electric Piano': 'sine',
+                'Rhodes Piano': 'sine',
+                'Organ': 'square',
+                'Church Organ': 'square',
+                'Pipe Organ': 'square',
+                'Hammond Organ': 'square',
+                'Guitar': 'sawtooth',
+                'Acoustic Guitar': 'triangle',
+                'Electric Guitar': 'sawtooth',
+                'Bass Guitar': 'sine',
+                'Violin': 'sawtooth',
+                'Viola': 'sawtooth',
+                'Cello': 'sawtooth',
+                'Trumpet': 'square',
+                'Trombone': 'square',
+                'French Horn': 'sine',
+                'Flute': 'sine',
+                'Clarinet': 'square',
+                'Saxophone': 'sawtooth',
+                'Synthesizer': 'sawtooth',
+                'Drums': 'triangle',
+                'Xylophone': 'sine',
+                'Marimba': 'sine',
+                'Vibraphone': 'sine'
+            };
+            return waveforms[instrument] || 'triangle';
+        };
+
+        const getInstrumentEnvelope = (instrument) => {
+            const envelopes = {
+                'Piano': { attack: 0.01, decay: 0.3, sustain: 0.3, release: 0.5 },
+                'Grand Piano': { attack: 0.01, decay: 0.4, sustain: 0.35, release: 0.6 },
+                'Organ': { attack: 0.05, decay: 0.1, sustain: 0.8, release: 0.3 },
+                'Guitar': { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.4 },
+                'Violin': { attack: 0.1, decay: 0.2, sustain: 0.7, release: 0.3 },
+                'Trumpet': { attack: 0.05, decay: 0.1, sustain: 0.6, release: 0.2 },
+                'Flute': { attack: 0.08, decay: 0.15, sustain: 0.5, release: 0.25 },
+                'Synthesizer': { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.4 },
+                'Xylophone': { attack: 0.001, decay: 0.5, sustain: 0.1, release: 0.3 },
+                'Drums': { attack: 0.001, decay: 0.1, sustain: 0.05, release: 0.1 }
+            };
+            return envelopes[instrument] || { attack: 0.02, decay: 0.2, sustain: 0.4, release: 0.3 };
+        };
+
+        const playNote = (frequency, duration, instrument = 'Piano') => {
+            if (!frequency) return;
+
+            const ctx = initAudioContext();
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            const filterNode = ctx.createBiquadFilter();
+
+            oscillator.type = getInstrumentWaveform(instrument);
+            oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
+
+            filterNode.type = 'lowpass';
+            filterNode.frequency.setValueAtTime(2000, ctx.currentTime);
+            filterNode.Q.setValueAtTime(1, ctx.currentTime);
+
+            const envelope = getInstrumentEnvelope(instrument);
+            const now = ctx.currentTime;
+
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.3, now + envelope.attack);
+            gainNode.gain.linearRampToValueAtTime(0.3 * envelope.sustain, now + envelope.attack + envelope.decay);
+            gainNode.gain.setValueAtTime(0.3 * envelope.sustain, now + duration - envelope.release);
+            gainNode.gain.linearRampToValueAtTime(0, now + duration);
+
+            oscillator.connect(filterNode);
+            filterNode.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            oscillator.start(now);
+            oscillator.stop(now + duration + 0.1);
+
+            return oscillator;
+        };
+
+        // ============================================
+        // NOTE PARSER
+        // ============================================
+
+        /**
+         * Parses note notation strings into structured note objects
+         * Supports multiple notation systems:
+         * 1. Classic asterisk notation: c4* (quarter), c4** (half), c4**** (whole)
+         * 2. Letter notation: c4w (whole), c4h (half), c4q (quarter), c4e (eighth), c4s (sixteenth), c4t (thirty-second)
+         * 3. Dotted notes: c4q. (dotted quarter = 1.5 beats)
+         * 4. Natural/Sharp/Flat support: c, c#, db
+         * 5. Octave specification: 1-8 (default 4)
+         * 6. Rests: r, rq, rh, re, etc.
+         * 7. Chords: [c4 e4 g4]q (plays notes simultaneously)
+         *
+         * @param {string} input - The notation string to parse
+         * @returns {Array} Array of note objects with type, note, octave, beats, duration info
+         */
+        const parseNotes = (input) => {
+            const notes = [];
+
+            // Duration mappings for different notation systems
+            const durationMap = {
+                'w': { beats: 4, name: 'whole', symbol: '𝅝' },
+                'h': { beats: 2, name: 'half', symbol: '𝅗𝅥' },
+                'q': { beats: 1, name: 'quarter', symbol: '♩' },
+                'e': { beats: 0.5, name: 'eighth', symbol: '♪' },
+                's': { beats: 0.25, name: 'sixteenth', symbol: '♬' },
+                't': { beats: 0.125, name: 'thirty-second', symbol: '♬♬' }
+            };
+
+            // Parse chords: [c4 e4 g4]q
+            const chordRegex = /\[([^\]]+)\]([whqest]\.?|\*+)?/g;
+            let processedInput = input;
+            const chordReplacements = [];
+
+            let chordMatch;
+            while ((chordMatch = chordRegex.exec(input)) !== null) {
+                const chordNotes = chordMatch[1].trim().split(/\s+/);
+                const durationSuffix = chordMatch[2] || 'q';
+                chordReplacements.push({
+                    original: chordMatch[0],
+                    notes: chordNotes,
+                    duration: durationSuffix,
+                    index: chordMatch.index
+                });
+            }
+
+            // Process tokens (including chords)
+            const tokens = processedInput.split(/\s+/);
+            let chordIndex = 0;
+
+            for (let tokenIdx = 0; tokenIdx < tokens.length; tokenIdx++) {
+                let token = tokens[tokenIdx];
+                if (!token) continue;
+
+                // Check if this token is part of a chord
+                let isPartOfChord = false;
+                for (const chord of chordReplacements) {
+                    if (input.indexOf(chord.original) !== -1 && token.includes('[')) {
+                        // Parse chord
+                        const chordNoteObjects = [];
+                        let beats = 1;
+                        let durationName = 'quarter';
+                        let durationSymbol = '♩';
+                        let isDotted = false;
+
+                        // Parse duration
+                        let durStr = chord.duration;
+                        if (durStr.includes('.')) {
+                            isDotted = true;
+                            durStr = durStr.replace('.', '');
+                        }
+
+                        const asteriskMatch = durStr.match(/\*+$/);
+                        if (asteriskMatch) {
+                            beats = asteriskMatch[0].length;
+                            durationName = beats === 4 ? 'whole' : beats === 2 ? 'half' : beats === 1 ? 'quarter' : `${beats}-beat`;
+                            durationSymbol = '♩'.repeat(Math.min(beats, 4));
+                        } else {
+                            const durationMatch = durStr.match(/([whqest])$/i);
+                            if (durationMatch) {
+                                const durationLetter = durationMatch[1].toLowerCase();
+                                const duration = durationMap[durationLetter];
+                                if (duration) {
+                                    beats = duration.beats;
+                                    durationName = duration.name;
+                                    durationSymbol = duration.symbol;
+                                }
+                            }
+                        }
+
+                        if (isDotted) {
+                            beats *= 1.5;
+                            durationName = `dotted ${durationName}`;
+                            durationSymbol += '.';
+                        }
+
+                        // Parse each note in the chord
+                        for (const chordNote of chord.notes) {
+                            const noteMatch = chordNote.match(/^([a-gA-G][#b]?)(\d)?$/);
+                            if (noteMatch) {
+                                const noteName = noteMatch[1].toLowerCase();
+                                const octave = noteMatch[2] ? parseInt(noteMatch[2]) : 4;
+                                const validOctave = Math.max(1, Math.min(8, octave));
+
+                                chordNoteObjects.push({
+                                    note: noteName,
+                                    octave: validOctave,
+                                    isNatural: !noteName.includes('#') && !noteName.includes('b'),
+                                    isSharp: noteName.includes('#'),
+                                    isFlat: noteName.includes('b')
+                                });
+                            }
+                        }
+
+                        if (chordNoteObjects.length > 0) {
+                            notes.push({
+                                type: 'chord',
+                                notes: chordNoteObjects,
+                                beats,
+                                original: chord.original,
+                                durationName,
+                                durationSymbol,
+                                isDotted
+                            });
+                        }
+
+                        isPartOfChord = true;
+                        break;
+                    }
+                }
+
+                if (isPartOfChord) {
+                    // Skip chord tokens
+                    while (tokenIdx < tokens.length - 1 && !tokens[tokenIdx].includes(']')) {
+                        tokenIdx++;
+                    }
+                    continue;
+                }
+
+                // Regular note/rest parsing
+                let beats = 1;
+                let durationName = 'quarter';
+                let durationSymbol = '♩';
+                let isDotted = false;
+                let noteStr = token;
+
+                if (token.includes('.')) {
+                    isDotted = true;
+                    noteStr = token.replace('.', '');
+                }
+
+                const asteriskMatch = noteStr.match(/\*+$/);
+                if (asteriskMatch) {
+                    beats = asteriskMatch[0].length;
+                    noteStr = noteStr.replace(/\*+$/, '');
+                    durationName = beats === 4 ? 'whole' : beats === 2 ? 'half' : beats === 1 ? 'quarter' : `${beats}-beat`;
+                    durationSymbol = '♩'.repeat(Math.min(beats, 4));
+                } else {
+                    const durationMatch = noteStr.match(/([whqest])$/i);
+                    if (durationMatch) {
+                        const durationLetter = durationMatch[1].toLowerCase();
+                        const duration = durationMap[durationLetter];
+                        if (duration) {
+                            beats = duration.beats;
+                            durationName = duration.name;
+                            durationSymbol = duration.symbol;
+                            noteStr = noteStr.slice(0, -1);
+                        }
+                    }
+                }
+
+                if (isDotted) {
+                    beats *= 1.5;
+                    durationName = `dotted ${durationName}`;
+                    durationSymbol += '.';
+                }
+
+                if (noteStr.toLowerCase() === 'r' || noteStr.toLowerCase() === 'rest') {
+                    notes.push({
+                        type: 'rest',
+                        beats,
+                        original: token,
+                        durationName,
+                        durationSymbol
+                    });
+                    continue;
+                }
+
+                const noteMatch = noteStr.match(/^([a-gA-G][#b]?)(\d)?$/);
+                if (noteMatch) {
+                    const noteName = noteMatch[1].toLowerCase();
+                    const octave = noteMatch[2] ? parseInt(noteMatch[2]) : 4;
+                    const validOctave = Math.max(1, Math.min(8, octave));
+
+                    notes.push({
+                        type: 'note',
+                        note: noteName,
+                        octave: validOctave,
+                        beats,
+                        original: token,
+                        durationName,
+                        durationSymbol,
+                        isDotted,
+                        isNatural: !noteName.includes('#') && !noteName.includes('b'),
+                        isSharp: noteName.includes('#'),
+                        isFlat: noteName.includes('b')
+                    });
+                }
+            }
+
+            return notes;
+        };
+
+        /**
+         * Renders parsed notes into visual badges showing note info
+         * Each badge displays: note name, octave, duration symbol, and beat count
+         * Color-coded by note type: natural (violet), sharp (pink), flat (cyan), rest (gray)
+         *
+         * @param {Array} notes - Array of parsed note objects
+         */
+        const renderParsedNotes = (notes) => {
+            const container = document.getElementById('parsed-notes');
+
+            if (notes.length === 0) {
+                container.innerHTML = '<span class="text-gray-500 text-sm">Notes will appear here as you type...</span>';
+                return;
+            }
+
+            /**
+             * Determines the color class for a note badge based on accidentals
+             * @param {string} note - The note name (e.g., 'c', 'c#', 'db')
+             * @returns {string} Tailwind CSS classes for background, text, and border colors
+             */
+            const getNoteColor = (note) => {
+                // Sharp notes get pink coloring
+                if (note.includes('#')) {
+                    return 'bg-pink-500/20 text-pink-300 border border-pink-500/30';
+                }
+                // Flat notes get cyan coloring
+                else if (note.includes('b')) {
+                    return 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30';
+                }
+                // Natural notes get violet coloring
+                else {
+                    return 'bg-violet-500/20 text-violet-300 border border-violet-500/30';
+                }
+            };
+
+            /**
+             * Formats the beat count for display
+             * Shows fractions for beats < 1, decimals otherwise
+             * @param {number} beats - The beat count
+             * @returns {string} Formatted beat string
+             */
+            const formatBeats = (beats) => {
+                if (beats === 0.125) return '⅛';
+                if (beats === 0.25) return '¼';
+                if (beats === 0.5) return '½';
+                if (beats === 0.75) return '¾';
+                if (beats === 1.5) return '1½';
+                if (beats === 1) return '1';
+                if (beats === 2) return '2';
+                if (beats === 3) return '3';
+                if (beats === 4) return '4';
+                return beats.toFixed(2);
+            };
+
+            // Generate HTML for each note badge
+            container.innerHTML = notes.map((n, i) => {
+                if (n.type === 'rest') {
+                    // Rest badge with gray coloring
+                    return `<span class="bg-gray-600/30 text-gray-400 px-3 py-1.5 rounded-lg text-sm mono-font border border-gray-600/30 flex items-center gap-2 inline-flex" data-index="${i}">
+                        <span class="text-lg">🎵</span>
+                        <span>rest</span>
+                        <span class="text-xs opacity-75">${n.durationSymbol} (${formatBeats(n.beats)})</span>
+                    </span>`;
+                }
+
+                if (n.type === 'chord') {
+                    // Chord badge with green coloring
+                    const chordNoteNames = n.notes.map(cn => {
+                        const accidental = cn.isSharp ? '♯' : cn.isFlat ? '♭' : '';
+                        return `${cn.note}${accidental}${cn.octave}`;
+                    }).join(' ');
+
+                    return `<span class="bg-emerald-500/20 text-emerald-300 px-3 py-1.5 rounded-lg text-sm mono-font border border-emerald-500/30 flex items-center gap-2 inline-flex" data-index="${i}">
+                        <span class="text-lg">🎼</span>
+                        <span class="font-bold">[${chordNoteNames}]</span>
+                        <span class="text-xs opacity-75">${n.durationSymbol} (${formatBeats(n.beats)})</span>
+                    </span>`;
+                }
+
+                // Note badge with color coding based on accidentals
+                const colorClass = getNoteColor(n.note);
+                const accidentalSymbol = n.isSharp ? '♯' : n.isFlat ? '♭' : '';
+
+                return `<span class="${colorClass} px-3 py-1.5 rounded-lg text-sm mono-font flex items-center gap-2 inline-flex" data-index="${i}">
+                    <span class="font-bold">${n.note}${accidentalSymbol}${n.octave}</span>
+                    <span class="text-xs opacity-75">${n.durationSymbol} (${formatBeats(n.beats)})</span>
+                </span>`;
+            }).join('');
+        };
+
+        // ============================================
+        // PLAYBACK
+        // ============================================
+
+        const playComposition = async (notesInput, tempo) => {
+            const notes = parseNotes(notesInput);
+            if (notes.length === 0) {
+                showToast('No valid notes to play', 'error');
+                return;
+            }
+
+            isPlaying = true;
+            updatePlayingStatus(true);
+
+            const beatDuration = 60 / tempo;
+            let currentTime = 0;
+
+            for (let i = 0; i < notes.length && isPlaying; i++) {
+                const note = notes[i];
+                const duration = note.beats * beatDuration;
+
+                // Highlight current note
+                highlightParsedNote(i);
+                updateVisualizer(note);
+
+                if (note.type === 'note') {
+                    const frequency = noteToFrequency(note.note, note.octave);
+                    if (frequency) {
+                        playNote(frequency, duration * 0.9, selectedInstrument);
+                    }
+                } else if (note.type === 'chord') {
+                    // Play all notes in the chord simultaneously
+                    for (const chordNote of note.notes) {
+                        const frequency = noteToFrequency(chordNote.note, chordNote.octave);
+                        if (frequency) {
+                            playNote(frequency, duration * 0.9, selectedInstrument);
+                        }
+                    }
+                }
+
+                await sleep(duration * 1000);
+                currentTime += duration;
+            }
+
+            isPlaying = false;
+            updatePlayingStatus(false);
+            resetVisualizer();
+        };
+
+        const stopPlayback = () => {
+            isPlaying = false;
+            updatePlayingStatus(false);
+            resetVisualizer();
+        };
+
+        const sleep = (ms) => new Promise(resolve => {
+            currentPlayback = setTimeout(resolve, ms);
+        });
+
+        const highlightParsedNote = (index) => {
+            const container = document.getElementById('parsed-notes');
+            const notes = container.querySelectorAll('[data-index]');
+            notes.forEach((el, i) => {
+                el.classList.remove('note-highlight', 'ring-2', 'ring-violet-400');
+                if (i === index) {
+                    el.classList.add('note-highlight', 'ring-2', 'ring-violet-400');
+                }
+            });
+        };
+
+        // ============================================
+        // VISUALIZER
+        // ============================================
+
+        const initVisualizer = () => {
+            const container = document.getElementById('visualizer');
+            container.innerHTML = '';
+
+            for (let i = 0; i < 32; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'visualizer-bar w-2 rounded-t transition-all duration-100';
+                bar.style.height = '4px';
+                container.appendChild(bar);
+            }
+        };
+
+        const createMusicParticle = (note) => {
+            const emojis = ['♪', '♫', '♬', '🎵', '🎶', '✨', '⭐', '💫'];
+            const particle = document.createElement('div');
+            particle.className = 'music-particle';
+            particle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            particle.style.left = Math.random() * window.innerWidth + 'px';
+            particle.style.top = window.innerHeight - 100 + 'px';
+            particle.style.color = `hsl(${Math.random() * 360}, 80%, 70%)`;
+            document.body.appendChild(particle);
+
+            setTimeout(() => particle.remove(), 4000);
+        };
+
+        const updateVisualizer = (note) => {
+            const bars = document.querySelectorAll('.visualizer-bar');
+            const allNotes = ['c', 'c#', 'db', 'd', 'd#', 'eb', 'e', 'f', 'f#', 'gb', 'g', 'g#', 'ab', 'a', 'a#', 'bb', 'b'];
+            const noteIndex = note.type === 'note' ?
+                (allNotes.indexOf(note.note) + (note.octave - 1) * 12) % 32 :
+                Math.floor(Math.random() * 32);
+
+            bars.forEach((bar, i) => {
+                bar.classList.remove('active');
+                const distance = Math.abs(i - noteIndex);
+                const height = Math.max(4, 80 - distance * 8 + Math.random() * 20);
+                bar.style.height = `${height}px`;
+
+                if (distance < 3) {
+                    bar.classList.add('active');
+                }
+            });
+
+            // Create particle effect on note play
+            if (note.type === 'note' && Math.random() > 0.6) {
+                createMusicParticle(note);
+            }
+        };
+
+        const resetVisualizer = () => {
+            const bars = document.querySelectorAll('.visualizer-bar');
+            bars.forEach(bar => {
+                bar.style.height = '4px';
+            });
+        };
+
+        const updatePlayingStatus = (playing) => {
+            const status = document.getElementById('playing-status');
+            const playBtn = document.getElementById('play-btn');
+            const stopBtn = document.getElementById('stop-btn');
+
+            if (playing) {
+                status.classList.remove('hidden');
+                status.classList.add('flex');
+                playBtn.classList.add('hidden');
+                stopBtn.classList.remove('hidden');
+            } else {
+                status.classList.add('hidden');
+                status.classList.remove('flex');
+                playBtn.classList.remove('hidden');
+                stopBtn.classList.add('hidden');
+            }
+        };
+
+        // ============================================
+        // VIRTUAL PIANO
+        // ============================================
+
+        const initPiano = () => {
+            const container = document.querySelector('#piano > div');
+            container.innerHTML = '';
+
+            const whiteNotes = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
+            const blackNotes = {
+                'c': { sharp: 'c#', flat: 'db' },
+                'd': { sharp: 'd#', flat: 'eb' },
+                'f': { sharp: 'f#', flat: 'gb' },
+                'g': { sharp: 'g#', flat: 'ab' },
+                'a': { sharp: 'a#', flat: 'bb' }
+            };
+
+            // Determine octave range based on clef
+            const startOctave = currentClef === 'bass' ? 2 : 3;
+            const endOctave = currentClef === 'bass' ? 4 : 5;
+
+            for (let octave = startOctave; octave <= endOctave; octave++) {
+                for (let i = 0; i < whiteNotes.length; i++) {
+                    const note = whiteNotes[i];
+
+                    // White key
+                    const whiteKey = document.createElement('button');
+                    whiteKey.className = 'piano-key-white w-10 h-32 rounded-b-lg relative z-0 focus:outline-none';
+                    whiteKey.dataset.note = note;
+                    whiteKey.dataset.octave = octave;
+                    whiteKey.innerHTML = `<span class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-gray-600">${note}${octave}</span>`;
+                    whiteKey.addEventListener('click', () => handlePianoKeyClick(note, octave));
+                    whiteKey.addEventListener('mousedown', () => {
+                        whiteKey.classList.add('active');
+                        const freq = noteToFrequency(note, octave);
+                        if (freq) playNote(freq, 0.3, selectedInstrument);
+                    });
+                    whiteKey.addEventListener('mouseup', () => whiteKey.classList.remove('active'));
+                    whiteKey.addEventListener('mouseleave', () => whiteKey.classList.remove('active'));
+                    container.appendChild(whiteKey);
+
+                    // Black key (if applicable)
+                    if (blackNotes[note]) {
+                        const blackKey = document.createElement('button');
+                        blackKey.className = 'piano-key-black w-6 h-20 rounded-b-lg absolute z-10 -ml-3 focus:outline-none';
+                        blackKey.dataset.note = blackNotes[note].sharp;
+                        blackKey.dataset.octave = octave;
+                        blackKey.style.left = `${(octave - startOctave) * 7 * 40 + (i + 1) * 40 - 12}px`;
+                        blackKey.title = `${blackNotes[note].sharp} / ${blackNotes[note].flat}`;
+                        blackKey.addEventListener('click', () => handlePianoKeyClick(blackNotes[note].sharp, octave));
+                        blackKey.addEventListener('mousedown', () => {
+                            blackKey.classList.add('active');
+                            const freq = noteToFrequency(blackNotes[note].sharp, octave);
+                            if (freq) playNote(freq, 0.3, selectedInstrument);
+                        });
+                        blackKey.addEventListener('mouseup', () => blackKey.classList.remove('active'));
+                        blackKey.addEventListener('mouseleave', () => blackKey.classList.remove('active'));
+                        container.appendChild(blackKey);
+                    }
+                }
+            }
+        };
+
+        /**
+         * Builds a chord based on chord type and root note
+         * @param {string} root - Root note (e.g., 'c', 'd#')
+         * @param {number} octave - Octave for root note
+         * @param {string} chordType - Type of chord (major, minor, dim, aug, 7th, sus4)
+         * @returns {Array} Array of notes in the chord
+         */
+        const buildChord = (root, octave, chordType) => {
+            const noteSequence = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b'];
+            const rootIndex = noteSequence.indexOf(root.toLowerCase());
+
+            if (rootIndex === -1) return [];
+
+            const getNote = (semitones) => {
+                const index = (rootIndex + semitones) % 12;
+                const octaveOffset = Math.floor((rootIndex + semitones) / 12);
+                return { note: noteSequence[index], octave: octave + octaveOffset };
+            };
+
+            const chordIntervals = {
+                'major': [0, 4, 7],           // Root, Major 3rd, Perfect 5th
+                'minor': [0, 3, 7],           // Root, Minor 3rd, Perfect 5th
+                'dim': [0, 3, 6],             // Root, Minor 3rd, Diminished 5th
+                'aug': [0, 4, 8],             // Root, Major 3rd, Augmented 5th
+                '7th': [0, 4, 7, 10],         // Root, Major 3rd, Perfect 5th, Minor 7th
+                'sus4': [0, 5, 7]             // Root, Perfect 4th, Perfect 5th
+            };
+
+            const intervals = chordIntervals[chordType] || chordIntervals['major'];
+            return intervals.map(semitones => getNote(semitones));
+        };
+
+        /**
+         * Handles piano key clicks to insert notes into the composition
+         * Uses the currently selected duration from the duration selector
+         * @param {string} note - The note name (e.g., 'c', 'c#', 'db')
+         * @param {number} octave - The octave number (1-8)
+         */
+        const handlePianoKeyClick = (note, octave) => {
+            const input = document.getElementById('note-input');
+            const currentValue = input.value.trim();
+
+            // Format the note with the selected duration
+            let newNote;
+            if (selectedDuration === 'r') {
+                // Rest - just use 'r' with duration
+                newNote = `r${selectedDuration === 'q' ? '' : selectedDuration}`;
+            } else {
+                // Regular note with duration suffix
+                newNote = `${note}${octave}${selectedDuration}`;
+            }
+
+            input.value = currentValue ? `${currentValue} ${newNote}` : newNote;
+
+            // Parse and display
+            const parsedNotes = parseNotes(input.value);
+            renderParsedNotes(parsedNotes);
+
+            // Create sparkle effect
+            createMusicParticle({ type: 'note', note, octave });
+        };
+
+        // ============================================
+        // INSTRUMENT UI
+        // ============================================
+
+        let activeCategory = 'Piano & Keys';
+
+        const initInstruments = () => {
+            const tabsContainer = document.getElementById('category-tabs');
+            const listContainer = document.getElementById('instrument-list');
+            const countEl = document.getElementById('instrument-count');
+
+            countEl.textContent = getTotalInstrumentCount();
+
+            // Render category tabs
+            tabsContainer.innerHTML = Object.keys(instrumentCategories).map(cat =>
+                `<button class="category-tab px-3 py-1.5 rounded-lg text-xs text-gray-300 ${cat === activeCategory ? 'active' : ''}" data-category="${cat}">${cat}</button>`
+            ).join('');
+
+            // Add tab click handlers
+            tabsContainer.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    activeCategory = btn.dataset.category;
+                    updateCategoryTabs();
+                    renderInstruments();
+                });
+            });
+
+            renderInstruments();
+        };
+
+        const updateCategoryTabs = () => {
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.category === activeCategory);
+            });
+        };
+
+        const renderInstruments = (searchTerm = '') => {
+            const container = document.getElementById('instrument-list');
+            let instruments = instrumentCategories[activeCategory] || [];
+
+            if (searchTerm) {
+                instruments = [];
+                Object.values(instrumentCategories).forEach(list => {
+                    instruments.push(...list.filter(i =>
+                        i.toLowerCase().includes(searchTerm.toLowerCase())
+                    ));
+                });
+            }
+
+            container.innerHTML = instruments.map(inst =>
+                `<div class="instrument-card p-3 rounded-xl ${inst === selectedInstrument ? 'selected' : ''}" data-instrument="${inst}">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                            <span class="text-lg">${getInstrumentEmoji(inst)}</span>
+                        </div>
+                        <span class="text-sm text-gray-300">${inst}</span>
+                    </div>
+                </div>`
+            ).join('');
+
+            // Add click handlers
+            container.querySelectorAll('.instrument-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    selectedInstrument = card.dataset.instrument;
+                    updateSelectedInstrument();
+                    renderInstruments(document.getElementById('instrument-search').value);
+                });
+            });
+        };
+
+        const getInstrumentEmoji = (instrument) => {
+            const emojis = {
+                'Piano': '🎹', 'Grand Piano': '🎹', 'Electric Piano': '🎹',
+                'Guitar': '🎸', 'Acoustic Guitar': '🎸', 'Electric Guitar': '🎸', 'Bass Guitar': '🎸',
+                'Violin': '    ', 'Viola': '🎻', 'Cello': '🎻',
+                'Trumpet': '🎺', 'Trombone': '🎺', 'French Horn': '🎺',
+                'Flute': '🎵', 'Clarinet': '🎵', 'Saxophone': '🎷',
+                'Drums': '🥁', 'Percussion': '🥁',
+                'Synthesizer': '🎛️', 'Organ': '🎹',
+                'Harp': '🎵', 'Choir': '🎤', 'Voice': '🎤'
+            };
+
+            for (const [key, emoji] of Object.entries(emojis)) {
+                if (instrument.toLowerCase().includes(key.toLowerCase())) {
+                    return emoji;
+                }
+            }
+            return '🎵';
+        };
+
+        const updateSelectedInstrument = () => {
+            document.getElementById('selected-instrument').textContent = selectedInstrument;
+        };
+
+        // ============================================
+        // COMPOSITIONS UI
+        // ============================================
+
+        const renderCompositions = () => {
+            const container = document.getElementById('saved-compositions');
+            const countEl = document.getElementById('composition-count');
+            const warningEl = document.getElementById('limit-warning');
+
+            countEl.textContent = compositions.length;
+            currentRecordCount = compositions.length;
+
+            // Show/hide limit warning
+            if (compositions.length >= 999) {
+                warningEl.classList.remove('hidden');
+            } else {
+                warningEl.classList.add('hidden');
+            }
+
+            if (compositions.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No saved compositions yet</p>';
+                return;
+            }
+
+            // Use selective updates
+            const existingCards = new Map(
+                [...container.querySelectorAll('.composition-card')].map(el => [el.dataset.id, el])
+            );
+
+            // Create document fragment for new items
+            const fragment = document.createDocumentFragment();
+            const newIds = new Set();
+
+            compositions.forEach(comp => {
+                newIds.add(comp.__backendId);
+
+                if (existingCards.has(comp.__backendId)) {
+                    // Update existing card
+                    const card = existingCards.get(comp.__backendId);
+                    updateCompositionCard(card, comp);
+                    existingCards.delete(comp.__backendId);
+                } else {
+                    // Create new card
+                    const card = createCompositionCard(comp);
+                    fragment.appendChild(card);
+                }
+            });
+
+            // Remove deleted cards
+            existingCards.forEach(card => card.remove());
+
+            // Clear container if empty and add fragment
+            if (container.querySelector('p')) {
+                container.innerHTML = '';
+            }
+            container.appendChild(fragment);
+        };
+
+        const createCompositionCard = (comp) => {
+            const card = document.createElement('div');
+            card.className = 'composition-card rounded-xl p-4 fade-in';
+            card.dataset.id = comp.__backendId;
+
+            const date = new Date(comp.createdAt);
+            const dateStr = date.toLocaleDateString();
+
+            card.innerHTML = `
+                <div class="flex items-start justify-between mb-2">
+                    <h3 class="font-medium text-gray-200 truncate flex-1">${escapeHtml(comp.title)}</h3>
+                    <div class="flex gap-1 ml-2 delete-actions">
+                        <button class="delete-btn p-1.5 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors" title="Delete">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500 mb-2">${escapeHtml(comp.instrument)} • ${comp.tempo} BPM • ${dateStr}</div>
+                <div class="text-xs text-gray-400 mono-font truncate mb-3">${escapeHtml(comp.notes.substring(0, 50))}${comp.notes.length > 50 ? '...' : ''}</div>
+                <div class="flex gap-2">
+                    <button class="load-btn flex-1 btn-secondary px-3 py-1.5 rounded-lg text-xs">Load</button>
+                    <button class="play-comp-btn flex-1 btn-primary px-3 py-1.5 rounded-lg text-xs">Play</button>
+                </div>
+            `;
+
+            attachCompositionCardEvents(card, comp);
+            return card;
+        };
+
+        const updateCompositionCard = (card, comp) => {
+            const date = new Date(comp.createdAt);
+            const dateStr = date.toLocaleDateString();
+
+            card.querySelector('h3').textContent = comp.title;
+            card.querySelector('.text-xs.text-gray-500').textContent = `${comp.instrument} • ${comp.tempo} BPM • ${dateStr}`;
+            card.querySelector('.mono-font').textContent = `${comp.notes.substring(0, 50)}${comp.notes.length > 50 ? '...' : ''}`;
+        };
+
+        const attachCompositionCardEvents = (card, comp) => {
+            const deleteBtn = card.querySelector('.delete-btn');
+            const loadBtn = card.querySelector('.load-btn');
+            const playBtn = card.querySelector('.play-comp-btn');
+            const deleteActions = card.querySelector('.delete-actions');
+
+            deleteBtn.addEventListener('click', async () => {
+                // Replace with confirmation buttons
+                deleteActions.innerHTML = `
+                    <button class="confirm-delete-btn delete-confirm-btn px-2 py-1 rounded text-xs">Delete?</button>
+                    <button class="cancel-delete-btn btn-secondary px-2 py-1 rounded text-xs">Cancel</button>
+                `;
+
+                const confirmBtn = deleteActions.querySelector('.confirm-delete-btn');
+                const cancelBtn = deleteActions.querySelector('.cancel-delete-btn');
+
+                confirmBtn.addEventListener('click', async () => {
+                    confirmBtn.disabled = true;
+                    confirmBtn.textContent = 'Deleting...';
+
+                    const result = await window.dataSdk.delete(comp);
+                    if (result.isError) {
+                        showToast('Failed to delete composition', 'error');
+                        // Restore delete button
+                        deleteActions.innerHTML = `
+                            <button class="delete-btn p-1.5 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors" title="Delete">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        `;
+                        attachCompositionCardEvents(card, comp);
+                    } else {
+                        showToast('Composition deleted', 'success');
+                    }
+                });
+
+                cancelBtn.addEventListener('click', () => {
+                    deleteActions.innerHTML = `
+                        <button class="delete-btn p-1.5 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors" title="Delete">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    `;
+                    attachCompositionCardEvents(card, comp);
+                });
+            });
+
+            loadBtn.addEventListener('click', () => {
+                document.getElementById('composition-title').value = comp.title;
+                document.getElementById('note-input').value = comp.notes;
+                document.getElementById('tempo-slider').value = comp.tempo;
+                document.getElementById('tempo-value').textContent = comp.tempo;
+                selectedInstrument = comp.instrument;
+                updateSelectedInstrument();
+                renderInstruments(document.getElementById('instrument-search').value);
+
+                const parsedNotes = parseNotes(comp.notes);
+                renderParsedNotes(parsedNotes);
+
+                showToast('Composition loaded', 'success');
+            });
+
+            playBtn.addEventListener('click', () => {
+                if (!isPlaying) {
+                    playComposition(comp.notes, comp.tempo);
+                }
+            });
+        };
+
+        const escapeHtml = (text) => {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
+
+        // ============================================
+        // TOAST NOTIFICATIONS
+        // ============================================
+
+        const showToast = (message, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const colors = {
+                success: 'bg-green-500/20 border-green-500/30 text-green-300',
+                error: 'bg-red-500/20 border-red-500/30 text-red-300',
+                info: 'bg-violet-500/20 border-violet-500/30 text-violet-300'
+            };
+
+            toast.className = `toast glass-panel ${colors[type]} border rounded-xl px-4 py-3 text-sm max-w-xs`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            setTimeout(() => toast.remove(), 3000);
+        };
+
+        // ============================================
+        // DATA SDK HANDLER
+        // ============================================
+
+        const dataHandler = {
+            onDataChanged(data) {
+                compositions = data;
+                renderCompositions();
+            }
+        };
+
+        // ============================================
+        // ELEMENT SDK HANDLER
+        // ============================================
+
+        const onConfigChange = async (config) => {
+            const appTitle = document.getElementById('app-title');
+            const noteInput = document.getElementById('note-input');
+
+            if (appTitle) {
+                appTitle.textContent = config.app_title || defaultConfig.app_title;
+            }
+
+            if (noteInput) {
+                noteInput.placeholder = config.placeholder_text || defaultConfig.placeholder_text;
+            }
+
+            // Apply colors
+            document.body.style.setProperty('--bg-color', config.background_color || defaultConfig.background_color);
+            document.body.style.setProperty('--surface-color', config.surface_color || defaultConfig.surface_color);
+            document.body.style.setProperty('--text-color', config.text_color || defaultConfig.text_color);
+            document.body.style.setProperty('--primary-color', config.primary_action_color || defaultConfig.primary_action_color);
+            document.body.style.setProperty('--secondary-color', config.secondary_action_color || defaultConfig.secondary_action_color);
+        };
+
+        const mapToCapabilities = (config) => ({
+            recolorables: [
+                {
+                    get: () => config.background_color || defaultConfig.background_color,
+                    set: (value) => {
+                        config.background_color = value;
+                        window.elementSdk.setConfig({ background_color: value });
+                    }
+                },
+                {
+                    get: () => config.surface_color || defaultConfig.surface_color,
+                    set: (value) => {
+                        config.surface_color = value;
+                        window.elementSdk.setConfig({ surface_color: value });
+                    }
+                },
+                {
+                    get: () => config.text_color || defaultConfig.text_color,
+                    set: (value) => {
+                        config.text_color = value;
+                        window.elementSdk.setConfig({ text_color: value });
+                    }
+                },
+                {
+                    get: () => config.primary_action_color || defaultConfig.primary_action_color,
+                    set: (value) => {
+                        config.primary_action_color = value;
+                        window.elementSdk.setConfig({ primary_action_color: value });
+                    }
+                },
+                {
+                    get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+                    set: (value) => {
+                        config.secondary_action_color = value;
+                        window.elementSdk.setConfig({ secondary_action_color: value });
+                    }
+                }
+            ],
+            borderables: [],
+            fontEditable: undefined,
+            fontSizeable: undefined
+        });
+
+        const mapToEditPanelValues = (config) => new Map([
+            ['app_title', config.app_title || defaultConfig.app_title],
+            ['placeholder_text', config.placeholder_text || defaultConfig.placeholder_text]
+        ]);
+
+        // ============================================
+        // EVENT HANDLERS
+        // ============================================
+
+        /**
+         * Sets up all event listeners for the application
+         * Includes: note input parsing, tempo control, playback controls,
+         * save/clear buttons, instrument search, and duration selectors
+         */
+        const setupEventListeners = () => {
+            // Note input parsing
+            const noteInput = document.getElementById('note-input');
+            noteInput.addEventListener('input', () => {
+                const notes = parseNotes(noteInput.value);
+                renderParsedNotes(notes);
+            });
+
+            // Duration selector buttons
+            const durationButtons = document.querySelectorAll('.duration-btn');
+            durationButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Remove selected class from all buttons
+                    durationButtons.forEach(b => b.classList.remove('selected'));
+                    // Add selected class to clicked button
+                    btn.classList.add('selected');
+                    // Update selected duration
+                    selectedDuration = btn.dataset.duration;
+
+                    // If rest is selected, insert rest immediately
+                    if (selectedDuration === 'r') {
+                        const input = document.getElementById('note-input');
+                        const currentValue = input.value.trim();
+                        input.value = currentValue ? `${currentValue} rq` : 'rq';
+                        const parsedNotes = parseNotes(input.value);
+                        renderParsedNotes(parsedNotes);
+
+                        // Reset to quarter note after inserting rest
+                        setTimeout(() => {
+                            durationButtons.forEach(b => b.classList.remove('selected'));
+                            document.querySelector('[data-duration="q"]').classList.add('selected');
+                            selectedDuration = 'q';
+                        }, 200);
+                    }
+                });
+            });
+
+            // Set default selection (quarter note)
+            document.querySelector('[data-duration="q"]').classList.add('selected');
+
+            // Chord buttons
+            const chordButtons = document.querySelectorAll('.chord-btn');
+            chordButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const chordType = btn.dataset.chord;
+                    const input = document.getElementById('note-input');
+                    const currentValue = input.value.trim();
+
+                    // Use C as root note at current octave (based on clef)
+                    const rootOctave = currentClef === 'bass' ? 3 : 4;
+                    const chordNotes = buildChord('c', rootOctave, chordType);
+
+                    if (chordNotes.length > 0) {
+                        const chordNotation = `[${chordNotes.map(n => `${n.note}${n.octave}`).join(' ')}]${selectedDuration}`;
+                        input.value = currentValue ? `${currentValue} ${chordNotation}` : chordNotation;
+
+                        // Parse and display
+                        const parsedNotes = parseNotes(input.value);
+                        renderParsedNotes(parsedNotes);
+
+                        // Create effect
+                        createMusicParticle({ type: 'chord' });
+                        showToast(`${chordType.charAt(0).toUpperCase() + chordType.slice(1)} chord added`, 'success');
+                    }
+                });
+            });
+
+            // Clef buttons
+            const clefButtons = document.querySelectorAll('.clef-btn');
+            clefButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentClef = btn.dataset.clef;
+
+                    // Update button styles
+                    clefButtons.forEach(b => {
+                        b.classList.remove('selected', 'bg-violet-500/20', 'border-violet-500/50', 'bg-orange-500/20', 'border-orange-500/50');
+                        b.classList.add('bg-black/30', 'border-gray-600/30');
+                    });
+
+                    if (currentClef === 'treble') {
+                        btn.classList.remove('bg-black/30', 'border-gray-600/30');
+                        btn.classList.add('selected', 'bg-violet-500/20', 'border-violet-500/50');
+                    } else {
+                        btn.classList.remove('bg-black/30', 'border-gray-600/30');
+                        btn.classList.add('selected', 'bg-orange-500/20', 'border-orange-500/50');
+                    }
+
+                    // Rebuild piano with new octave range
+                    initPiano();
+
+                    showToast(`Switched to ${currentClef} clef`, 'info');
+                });
+            });
+
+            // Tempo slider
+            const tempoSlider = document.getElementById('tempo-slider');
+            const tempoValue = document.getElementById('tempo-value');
+            tempoSlider.addEventListener('input', () => {
+                tempoValue.textContent = tempoSlider.value;
+            });
+
+            // Play button
+            document.getElementById('play-btn').addEventListener('click', () => {
+                const notes = document.getElementById('note-input').value;
+                const tempo = parseInt(document.getElementById('tempo-slider').value);
+                playComposition(notes, tempo);
+            });
+
+            // Stop button
+            document.getElementById('stop-btn').addEventListener('click', stopPlayback);
+
+            // Clear button
+            document.getElementById('clear-btn').addEventListener('click', () => {
+                document.getElementById('composition-title').value = '';
+                document.getElementById('note-input').value = '';
+                renderParsedNotes([]);
+            });
+
+            // Save button
+            document.getElementById('save-btn').addEventListener('click', async () => {
+                const title = document.getElementById('composition-title').value.trim() || 'Untitled';
+                const notes = document.getElementById('note-input').value.trim();
+                const tempo = parseInt(document.getElementById('tempo-slider').value);
+
+                if (!notes) {
+                    showToast('Please enter some notes first', 'error');
+                    return;
+                }
+
+                if (currentRecordCount >= 999) {
+                    showToast('Maximum limit reached. Delete some compositions first.', 'error');
+                    return;
+                }
+
+                const saveBtn = document.getElementById('save-btn');
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = `
+                    <div class="loading-spinner w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    Saving...
+                `;
+
+                const result = await window.dataSdk.create({
+                    id: Date.now().toString(),
+                    title: title,
+                    notes: notes,
+                    instrument: selectedInstrument,
+                    tempo: tempo,
+                    createdAt: new Date().toISOString()
+                });
+
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+                    </svg>
+                    Save
+                `;
+
+                if (result.isOk) {
+                    showToast('Composition saved!', 'success');
+                    // Celebration effect
+                    for (let i = 0; i < 10; i++) {
+                        setTimeout(() => createMusicParticle({ type: 'note' }), i * 100);
+                    }
+                } else {
+                    showToast('Failed to save composition', 'error');
+                }
+            });
+
+            // Instrument search
+            document.getElementById('instrument-search').addEventListener('input', (e) => {
+                renderInstruments(e.target.value);
+            });
+        };
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        const init = async () => {
+            // Initialize Element SDK
+            if (window.elementSdk) {
+                window.elementSdk.init({
+                    defaultConfig,
+                    onConfigChange,
+                    mapToCapabilities,
+                    mapToEditPanelValues
+                });
+            }
+
+            // Initialize Data SDK
+            if (window.dataSdk) {
+                const result = await window.dataSdk.init(dataHandler);
+                if (result.isError) {
+                    console.error('Failed to initialize data SDK');
+                }
+            }
+
+            // Initialize UI components
+            initVisualizer();
+            initPiano();
+            initInstruments();
+            setupEventListeners();
+
+            // Initial render
+            onConfigChange(window.elementSdk?.config || defaultConfig);
+        };
+
+        // Start the app
+        init();
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c11864df0c7351c',t:'MTc2ODk0MzA3MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
